@@ -1,40 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Produccion.Web.Data;
 using Produccion.Web.Data.Entities;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Produccion.Web.Controllers
 {
     public class AdministradorasController : Controller
     {
-        private readonly DataContext _context;
+        private IRepository repository { get; }
 
-        public AdministradorasController(DataContext context)
+        public AdministradorasController(IRepository repository)
         {
-            _context = context;
+            this.repository = repository;
         }
 
         // GET: Administradoras
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            return View(await _context.Administradoras.ToListAsync());
+            return View(this.repository.GetAdministradoras());
         }
 
         // GET: Administradoras/Details/5
-        public async Task<IActionResult> Details(int? id)
+        public IActionResult Details(int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var administradora = await _context.Administradoras
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var administradora = this.repository.GetAdministradora(id.Value);
+
             if (administradora == null)
             {
                 return NotFound();
@@ -54,26 +52,26 @@ namespace Produccion.Web.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,CodigoAdministradora,NombreAdministradora")] Administradora administradora)
+        public async Task<IActionResult> Create(Administradora administradora)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(administradora);
-                await _context.SaveChangesAsync();
+                this.repository.AddAdministradora(administradora);
+                await this.repository.SaveAllAsync();
                 return RedirectToAction(nameof(Index));
             }
             return View(administradora);
         }
 
         // GET: Administradoras/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        public IActionResult Edit(int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var administradora = await _context.Administradoras.FindAsync(id);
+            var administradora = this.repository.GetAdministradora(id.Value);
             if (administradora == null)
             {
                 return NotFound();
@@ -86,23 +84,19 @@ namespace Produccion.Web.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,CodigoAdministradora,NombreAdministradora")] Administradora administradora)
+        public async Task<IActionResult> Edit(Administradora administradora)
         {
-            if (id != administradora.Id)
-            {
-                return NotFound();
-            }
-
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _context.Update(administradora);
-                    await _context.SaveChangesAsync();
+                    this.repository.UpdateAdministradora(administradora);
+                    await this.repository.SaveAllAsync();
+
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!AdministradoraExists(administradora.Id))
+                    if (!this.repository.AdministradoraExists(administradora.Id))
                     {
                         return NotFound();
                     }
@@ -117,15 +111,15 @@ namespace Produccion.Web.Controllers
         }
 
         // GET: Administradoras/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        public IActionResult Delete(int? id)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            var administradora = await _context.Administradoras
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var administradora = this.repository.GetAdministradora(id.Value);
+
             if (administradora == null)
             {
                 return NotFound();
@@ -139,15 +133,12 @@ namespace Produccion.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var administradora = await _context.Administradoras.FindAsync(id);
-            _context.Administradoras.Remove(administradora);
-            await _context.SaveChangesAsync();
+            var administradora = this.repository.GetAdministradora(id);
+            this.repository.RemoveAdministradora(administradora);
+            await this.repository.SaveAllAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        private bool AdministradoraExists(int id)
-        {
-            return _context.Administradoras.Any(e => e.Id == id);
-        }
+       
     }
 }
